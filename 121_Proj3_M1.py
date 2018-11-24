@@ -145,7 +145,10 @@ def getTokensList(fileName):
     with open(fileName, "r") as f:                  #todo: multi-threading
         for line in f:
             tokenLine = pattern.findall(line.lower())
-            tokensList += tokenLine
+            #print(tokenLine)
+            filteredList = filterPattern(tokenLine)
+            #print(filteredList)
+            tokensList += filteredList
     #tokensList.sort(key=str.lower)
     #print(tokensList)
     return sorted(tokensList)       #to ensure later sorted(dictList) return descending by value and ascending by key
@@ -159,6 +162,14 @@ def buildDict(fileName):
     for token in tokenList:
         dictList[token] += 1
     return dictList
+
+def filterPattern(tokenList):
+    filteredList = tokenList
+    for pattern in tokenList:
+        if (re.compile('^[0-9]+', re.IGNORECASE)).match(str(pattern)):
+            #remove it
+            filteredList.remove(pattern)
+    return filteredList
 ######################################################################################################
 
 
