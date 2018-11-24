@@ -24,18 +24,36 @@
         ELSE
             adding docID to the set of that "keywords" in INDEX
     Store INDEX database on a file
+      
+    """
+
+""" TODO Improving Performance:
+        1. Applying only to html content (vincent)
+        2. Filtering stopword   (vincent)
+        3. Applying lemma compression methods for saving INDEX
+        4. Applying 
     """
 """" Answer query:
+    """
+
+""" Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
+             : https://arxiv.org/pdf/1208.6109.pdf => wordlength < 20 ?
     """
 
 import os, sys
 import re
 from collections import Counter
+import nltk
+from nltk.corpus import stopwords   # Get the common english stopwords
+from bs4 import BeautifulSoup       # Get content from html files
+
 
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
 NUM_OF_FOLDERS    = 75              #0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 500       #0-74, 0-499
+NUM_OF_FILES_PER_FOLDER = 500        #0-74, 0-499
+MAXWORDLENGTH           = 20
+MINWORDLENGTH           = 2
 
 def buildINDEX(rootFolder):
     #0-74, 0-499
@@ -76,7 +94,13 @@ def runQuery(searchKeyword, numOfDocs):
         # print ("Query result of " + str(searchKeyword))
         # for i in sortedList[0:numOfDocs]:
         #     print(i)
-    return sortedList[0:numOfDocs] #Return a list of (docID,freq)
+        if numOfDocs < len(sortedList):
+            queryResult = sortedList[0:numOfDocs]
+        else:
+            queryResult = sortedList
+    else:
+        queryResult = set()
+    return  queryResult     #Return a list of (docID,freq)
 
 def locateTSV(docID, fileName): #For milestone 1, I doing with tsv file, todo with json library later on
     docDirNum, docFileNum = divmod(docID, 1000)
@@ -142,15 +166,16 @@ def getTokensList(fileName):
         Thus, complexity: O(nlgn)    """
     tokensList = []
     pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
+    stopWords = set(stopwords.words('english'))     #Init here for the performance
+
     with open(fileName, "r") as f:                  #todo: multi-threading
-        for line in f:
-            tokenLine = pattern.findall(line.lower())
-            #print(tokenLine)
-            filteredList = filterPattern(tokenLine)
-            #print(filteredList)
-            tokensList += filteredList
-    #tokensList.sort(key=str.lower)
-    #print(tokensList)
+        soupObj = BeautifulSoup(f, features="html.parser")          # improving performance
+        content = soupObj.get_text()
+        tokenLine = pattern.findall(content.lower())
+        #print(tokenLine)
+        tokensList = filterPattern(tokenLine, stopWords)
+        #print(tokensList)
+
     return sorted(tokensList)       #to ensure later sorted(dictList) return descending by value and ascending by key
 
 def buildDict(fileName):
@@ -163,12 +188,20 @@ def buildDict(fileName):
         dictList[token] += 1
     return dictList
 
-def filterPattern(tokenList):
-    filteredList = tokenList
+def filterPattern(tokenList, stopWords):   # Applying all possible rules to filtering out non-sense keywords
+    filteredList = []
     for pattern in tokenList:
-        if (re.compile('^[0-9]+', re.IGNORECASE)).match(str(pattern)):
-            #remove it
-            filteredList.remove(pattern)
+        selectPattern = True
+        if  (re.compile('^[0-9].*', re.IGNORECASE)).match(str(pattern))                             \
+            or (re.compile('^[0-9]+', re.IGNORECASE)).match(str(pattern))                           \
+            or (pattern in stopWords)                                                               \
+            or (len(str(pattern)) > MAXWORDLENGTH)                                                  \
+            or (len(str(pattern)) <= MINWORDLENGTH):
+            selectPattern = False
+
+        if  selectPattern:
+            filteredList.append(pattern)
+
     return filteredList
 ######################################################################################################
 
@@ -176,3 +209,20 @@ def filterPattern(tokenList):
 #Main()
 if __name__ == '__main__':
     reportMilestone1()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
