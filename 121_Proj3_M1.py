@@ -62,7 +62,7 @@ from nltk.stem import PorterStemmer                        # https://www.datacam
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
 NUM_OF_FOLDERS    = 75              #0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 20 #500        #0-74, 0-499
+NUM_OF_FILES_PER_FOLDER = 500 #500        #0-74, 0-499
 MAXWORDLENGTH           = 20
 MINWORDLENGTH           = 2
 
@@ -183,7 +183,7 @@ def getTokensList(fileName):
 
     #https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
     #https://www.w3schools.com/html/html_intro.asp
-    parsingTags  = ['p', 'a']
+    parsingTags  = ['p', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'title']
     parsingOnly = SoupStrainer(parsingTags)
 
     with open(fileName, "r") as f:                  #todo: multi-threading
