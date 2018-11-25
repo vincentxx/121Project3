@@ -39,14 +39,13 @@
 """ Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
              : https://arxiv.org/pdf/1208.6109.pdf => wordlength < 20 ?
     """
-
 import os, sys
 import re
 from collections import Counter
 import nltk
 from nltk.corpus import stopwords   # Get the common english stopwords
-from bs4 import BeautifulSoup       # Get content from html files
-
+from bs4 import BeautifulSoup, Comment       # Get content from html files
+from pathlib import Path
 
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
@@ -141,7 +140,7 @@ def reportMilestone1():
     indexFilePath       = rootFolderPath + slash + "INDEX"
     buildINDEX(rootFolderPath)
     writeINDEXToFile(indexFilePath)
-
+    '''
     #Query list
     queryList   = ['informatics', 'mondego', 'irvine', 'artificial', 'computer']
     queryReturn = list()
@@ -157,7 +156,7 @@ def reportMilestone1():
             print("\tDocID " + str(docTag) + " : " + str(foundURL))
         #print(queryReturn)
     return None
-
+    '''
 ##################### Text Processing #################################################################
 def getTokensList(fileName):
     """ Convert file name text contents into sorted list of tokens in alphabetically
@@ -170,6 +169,13 @@ def getTokensList(fileName):
 
     with open(fileName, "r") as f:                  #todo: multi-threading
         soupObj = BeautifulSoup(f, features="html.parser")          # improving performance
+        # Added Code to clear script and style tags before parsing--------------------
+        for script in soupObj(["script", "style"]): 
+           script.decompose()
+        # remove all html comments and their tags
+        for comment in soupObj.findAll(text=lambda text:isinstance(text, Comment)):
+             comment.extract() 
+        #----------------END OF ADDED CODE ---------------------------------------------------------
         content = soupObj.get_text()
         tokenLine = pattern.findall(content.lower())
         #print(tokenLine)
@@ -209,20 +215,5 @@ def filterPattern(tokenList, stopWords):   # Applying all possible rules to filt
 #Main()
 if __name__ == '__main__':
     reportMilestone1()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    #docLocation[1] = Path("./WEBPAGES_RAW/0/2")
+    #processOneDoc(1)
