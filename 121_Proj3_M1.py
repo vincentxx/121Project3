@@ -54,7 +54,7 @@ import re
 from collections import Counter
 import nltk
 from nltk.corpus import stopwords                          # Get the common english stopwords
-from bs4 import BeautifulSoup, Comment, SoupStrainer       # Get content from html files
+from bs4 import BeautifulSoup, SoupStrainer       # Get content from html files
 from pathlib import Path
 from nltk.stem import PorterStemmer                        # https://www.datacamp.com/community/tutorials/stemming-lemmatization-python
 
@@ -62,7 +62,7 @@ from nltk.stem import PorterStemmer                        # https://www.datacam
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
 NUM_OF_FOLDERS    = 75              #0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 500 #20        #0-74, 0-499
+NUM_OF_FILES_PER_FOLDER = 20 #500        #0-74, 0-499
 MAXWORDLENGTH           = 20
 MINWORDLENGTH           = 2
 
@@ -183,8 +183,8 @@ def getTokensList(fileName):
 
     #https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
     #https://www.w3schools.com/html/html_intro.asp
-    #parsingTag  = ['body', 'title']
-    parsingOnly = SoupStrainer("p")
+    parsingTags  = ['p', 'a']
+    parsingOnly = SoupStrainer(parsingTags)
 
     with open(fileName, "r") as f:                  #todo: multi-threading
         soupObj = BeautifulSoup(f, features="html.parser", parse_only=parsingOnly)          # improving performance
