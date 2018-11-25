@@ -46,6 +46,7 @@ import nltk
 from nltk.corpus import stopwords   # Get the common english stopwords
 from bs4 import BeautifulSoup, Comment       # Get content from html files
 from pathlib import Path
+from nltk.stem import LancasterStemmer # LancasterStemmer from nltk for stemList function
 
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
@@ -184,11 +185,26 @@ def getTokensList(fileName):
 
     return sorted(tokensList)       #to ensure later sorted(dictList) return descending by value and ascending by key
 
+def stemList(listOfTokons):
+    ''' @param list of tokons
+    apply a LancasterStemmer on each tokon in the list.
+    This function modify the list in place.
+    @return None
+    '''
+    lancaster = LancasterStemmer()
+    for i in range(len(listOfTokons)):
+        # applying the stemmer of each item in the list
+        listOfTokons[i] = lancaster.stem(listOfTokons[i])
+    
+
 def buildDict(fileName):
     """ Returns a list of pairs (key,value)
         [("keys" -> "number of appearance of the key")] and sorted by the highest appearance
         Complexity: O(nlgn)    """
     tokenList = getTokensList(fileName)
+    #---------------calling the stem FUnction
+    stemList(tokenList)
+    #------------------------------------
     dictList = Counter() #faster
     for token in tokenList:
         dictList[token] += 1
