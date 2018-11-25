@@ -58,8 +58,8 @@ MINWORDLENGTH           = 2
 def buildINDEX(rootFolder):
     #0-74, 0-499
     #Build docID - filename mapping
-    for i in range(0, NUM_OF_FOLDERS):
-        for j in range(0, NUM_OF_FILES_PER_FOLDER):
+    for i in range(0, 10):
+        for j in range(0, 50):
             filePath = rootFolder + "/" + str(i) + "/" + str(j)  # WEBPAGES_RAW/0/12
             docID = i * 1000 + j
             docLocation[str(docID)] = filePath
@@ -141,9 +141,10 @@ def reportMilestone1():
     indexFilePath       = rootFolderPath + slash + "INDEX"
     buildINDEX(rootFolderPath)
     writeINDEXToFile(indexFilePath)
-    '''
+    
     #Query list
     queryList   = ['informatics', 'mondego', 'irvine', 'artificial', 'computer']
+    stemList(queryList)
     queryReturn = list()
     numOfReturn = 10
     for query in queryList:
@@ -157,7 +158,7 @@ def reportMilestone1():
             print("\tDocID " + str(docTag) + " : " + str(foundURL))
         #print(queryReturn)
     return None
-    '''
+    
 ##################### Text Processing #################################################################
 def getTokensList(fileName):
     """ Convert file name text contents into sorted list of tokens in alphabetically
