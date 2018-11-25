@@ -30,8 +30,17 @@
 """ TODO Improving Performance:
         1. Applying only to html content (vincent)
         2. Filtering stopword   (vincent)
-        3. Applying lemma compression methods for saving INDEX
-        4. Applying 
+        3. Applying compression methods for saving INDEX (Hoang)
+        4. Applying Stemming and lemmatization (Anas)
+        5. Function to calculate df-idf from docID (Hoang)
+        6. Implement ranking single keyword query (Anas)
+        7. Implement ranking PHRASE query (Anas or Hoang, should be the same person doing task 6)
+        8. Implement parallel processing for performance (optional, vincent)
+        9. Implement GUI (optional, Anas)
+        10.Design (vincent)  
+        11.Managing the project (vincent)
+    
+    Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
     """
 """" Answer query:
     """
@@ -44,14 +53,16 @@ import os, sys
 import re
 from collections import Counter
 import nltk
-from nltk.corpus import stopwords   # Get the common english stopwords
-from bs4 import BeautifulSoup       # Get content from html files
+from nltk.corpus import stopwords                          # Get the common english stopwords
+from bs4 import BeautifulSoup, Comment, SoupStrainer       # Get content from html files
+from pathlib import Path
+from nltk.stem import PorterStemmer                        # https://www.datacamp.com/community/tutorials/stemming-lemmatization-python
 
 
 INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
 docLocation     = dict()            # = { "docID" : path}
 NUM_OF_FOLDERS    = 75              #0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 500        #0-74, 0-499
+NUM_OF_FILES_PER_FOLDER = 500 #20        #0-74, 0-499
 MAXWORDLENGTH           = 20
 MINWORDLENGTH           = 2
 
@@ -144,6 +155,8 @@ def reportMilestone1():
 
     #Query list
     queryList   = ['informatics', 'mondego', 'irvine', 'artificial', 'computer']
+    stemList(queryList)
+    print(queryList)
     queryReturn = list()
     numOfReturn = 10
     for query in queryList:
@@ -168,8 +181,13 @@ def getTokensList(fileName):
     pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
     stopWords = set(stopwords.words('english'))     #Init here for the performance
 
+    #https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
+    #https://www.w3schools.com/html/html_intro.asp
+    #parsingTag  = ['body', 'title']
+    parsingOnly = SoupStrainer("p")
+
     with open(fileName, "r") as f:                  #todo: multi-threading
-        soupObj = BeautifulSoup(f, features="html.parser")          # improving performance
+        soupObj = BeautifulSoup(f, features="html.parser", parse_only=parsingOnly)          # improving performance
         content = soupObj.get_text()
         tokenLine = pattern.findall(content.lower())
         #print(tokenLine)
@@ -190,6 +208,7 @@ def buildDict(fileName):
 
 def filterPattern(tokenList, stopWords):   # Applying all possible rules to filtering out non-sense keywords
     filteredList = []
+    Porter = PorterStemmer()
     for pattern in tokenList:
         selectPattern = True
         if  (re.compile('^[0-9].*', re.IGNORECASE)).match(str(pattern))                             \
@@ -200,19 +219,53 @@ def filterPattern(tokenList, stopWords):   # Applying all possible rules to filt
             selectPattern = False
 
         if  selectPattern:
-            filteredList.append(pattern)
+            stemPattern = Porter.stem(pattern)  #stemming it before adding
+            filteredList.append(stemPattern)
+            #filteredList.append(pattern)
+
 
     return filteredList
+
+def stemList(listOfTokens): #Applying stemming rules for each keywords
+    Porter = PorterStemmer()
+    for i in range(len(listOfTokens)):
+        # applying the stemmer of each item in the list
+        listOfTokens[i] = Porter.stem(listOfTokens[i])
+    return None
+
 ######################################################################################################
 
-
-#Main()
-if __name__ == '__main__':
+def Run():
     reportMilestone1()
 
 
 
+##################################################
+#for testing/debug performance only
+#https://www.clips.uantwerpen.be/tutorials/python-performance-optimization
+def profile(function, *args, **kwargs):
+    """ Returns performance statistics (as a string) for the given function.
+    """
+    def _run():
+        function(*args, **kwargs)
+    import cProfile as profile
+    import pstats
+    import os
+    import sys; sys.modules['__main__'].__profile_run__ = _run
+    id = function.__name__ + '()'
+    profile.run('__profile_run__()', id)
+    p = pstats.Stats(id)
+    p.stream = open(id, 'w')
+    p.sort_stats('time').print_stats(20)
+    p.stream.close()
+    s = open(id).read()
+    os.remove(id)
+    return s
+###################################################
 
+#Main()
+if __name__ == '__main__':
+    print(profile(Run))
 
 
 
