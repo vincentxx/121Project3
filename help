@@ -126,7 +126,6 @@ def updating_INDEX():
 
 def processOneDoc(docID, idf_score_list):
     dictList, title_list = buildDict(docLocation[docID])  #dictList is a dict of (keyword : freq)
-    print(idf_score_list)
     for keyword in dictList:
         # todo here
         tmpTuple = (docID, int((1 + math.log(dictList[keyword],10)) * idf_score_list[keyword] *100),
@@ -281,35 +280,6 @@ def buildDict(fileName):
         headerDict[token] += 1
 
     return dictList, headerDict
-
-#Hoang added code -------------------------- START ---------------------------
-# def getTokensList_title(fileName): #only parse title, meta data and header from html
-#     tokensList = []
-#     pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
-#     stopWords = set(stopwords.words('english'))  # Init here for the performance
-#
-#     # https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
-#     # https://www.w3schools.com/html/html_intro.asp
-#     parsingTags = ['title', 'meta', 'b','h1', 'h2', 'h3', 'h4', 'h5', 'h6']
-#     parsingOnly = SoupStrainer(parsingTags)
-#
-#     with open(fileName, "r") as f:  # todo: multi-threading
-#         soupObj = BeautifulSoup(f, features="html.parser", parse_only=parsingOnly)  # improving performance
-#         content = soupObj.get_text()
-#         tokenLine = pattern.findall(content.lower())
-#         tokensList = filterPattern(tokenLine, stopWords)
-#
-#     return sorted(tokensList)
-#
-# def buildDict_title(fileName):
-#     tokenList = getTokensList_title(fileName)
-#     dictList = Counter()  # faster
-#     for token in tokenList:
-#         dictList[token] += 1
-#     return dictList
-#Hoang added code -------------------------- END ---------------------------
-
-
 
 
 def filterPattern(tokenList, stopWords):  # Applying all possible rules to filtering out non-sense keywords
