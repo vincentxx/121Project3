@@ -1,53 +1,3 @@
-#!/usr/bin/python3
-# @Vu Tran
-""" Team 55
-    Vu Tran - 48894667
-    Anas  - 41551580
-    Hoang - 20843397
-    CS 121 - Project 3  """
-
-""" Objective: 
-    Build INDEX table from 37,497 files
-    Parsing for keywords
-    """
-
-""" Data structure:
-    INDEX is a dict= {keyword:(set of (docID,frequency)), ...}, works as main database
-    docID = foldNum * 1000 + location file number of that folder, ex: 34/156 => docID = 34156
-    """
-
-""" Algorithm:
-    For each docID do
-        IF a "keyword" found not existing in the INDEX
-            adding it to INDEX[keys]
-            adding docID to the set of that "keywords" in INDEX
-        ELSE
-            adding docID to the set of that "keywords" in INDEX
-    Store INDEX database on a file
-    """
-
-""" TODO Improving Performance:
-        1. Applying only to html content (vincent)
-        2. Filtering stopword   (vincent)
-        3. Applying compression methods for saving INDEX (Hoang)
-        4. Applying Stemming and lemmatization (Anas)
-        5. Function to calculate df-idf from docID (Hoang)
-        6. Implement ranking single keyword query (Anas)
-        7. Implement ranking PHRASE query (Anas)
-        8. Implement parallel processing for performance (optional, vincent)
-        9. Implement GUI (optional, Anas)
-        10.Design (vincent)  
-        11.Managing the project (vincent)
-    Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
-    """
-"""" Answer query:
-    """
-
-""" Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
-             : https://arxiv.org/pdf/1208.6109.pdf => wordlength < 20 ?
-    """
-# https://www.datacamp.com/community/tutorials/stemming-lemmatization-python
-
 import os, sys, math, json, io,time
 import re
 from collections import Counter
@@ -61,16 +11,15 @@ from nltk.stem import PorterStemmer
 INDEX = dict()  # INDEX = {keyword: {set of (docID, tf-idf score)}}
 posting_list = dict()  # = { 'keyword' : (doc1,doc2, ....) }
 docLocation = dict()  # = { "docID" : path}
-NUM_OF_FOLDERS = 50 # 0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 50 # 500        #0-74, 0-499
+NUM_OF_FOLDERS = 75 # 0-74, 0-499
+NUM_OF_FILES_PER_FOLDER = 100 # 500        #0-74, 0-499
 MAXWORDLENGTH = 20
 MINWORDLENGTH = 2
 TOTAL_NUM_OF_DOC = 37497 #37497 #total documents
 
 
 def buildINDEX(rootFolder):
-    # 0-74, 0-499
-    # Build docID - filename mapping
+   
     for i in range(0, NUM_OF_FOLDERS):
         for j in range(0, NUM_OF_FILES_PER_FOLDER):
             filePath = rootFolder + "/" + str(i) + "/" + str(j)  # WEBPAGES_RAW/0/12
@@ -82,6 +31,7 @@ def buildINDEX(rootFolder):
     for docID in docLocation:
         try:
             buildPostingList(docID)
+            print(docID,"<--------------------------------------------")
         except:
             continue
 
@@ -124,7 +74,7 @@ def processOneDoc(docID, idf_score_list):
 
     title_list = buildDict_title(docLocation[docID])
     for keyword in dictList:
-        # todo here
+        
         tmpTuple = (docID, int((dictList[keyword] / dictList_length * idf_score_list[keyword]) * 10000), title_list[keyword])  # Calculate tf-idf score
         if keyword not in INDEX:
             tmpSet = list()
@@ -171,16 +121,6 @@ def locateTSV(docID, fileName):  # For milestone 1, I doing with tsv file, todo 
     return foundURL
 
 
-
-
-#Hoang added code ---------------START------------------
-def writeJSONFile():
-    with open('one.json', 'w') as fp:
-        json.dump(INDEX, fp, separators=(',', ':'), ensure_ascii=False)
-
-
-# Hoang added code ---------------END------------------
-
 def reportMilestone1():
     # Build & store INDEX database
     # Need to change / to \ if using WINDOW
@@ -190,7 +130,7 @@ def reportMilestone1():
         slash = "/"
 
     rootFolderPath = os.getcwd() + slash + "WEBPAGES_RAW"
-    #TSVFile = rootFolderPath + slash + "bookkeeping.tsv"
+    TSVFile = rootFolderPath + slash + "bookkeeping.tsv"
     indexFilePath = rootFolderPath + slash + "INDEX"
     buildINDEX(rootFolderPath)
     updating_INDEX() #Hoang added code
@@ -201,37 +141,29 @@ def reportMilestone1():
 
 ##################### Text Processing #################################################################
 def getTokensList(fileName):
-    """ Convert file name text contents into sorted list of tokens in alphabetically
-        Reading lines in file: O(n)
-        Sorting token list: O(nlgn)
-        Thus, complexity: O(nlgn)    """
+
     
     tokensList = []
     pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
     stopWords = set(stopwords.words('english'))  # Init here for the performance
 
-    # https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
-    # https://www.w3schools.com/html/html_intro.asp
-    #parsingTags = ['p', 'a', 'div']
-    #arsingOnly = SoupStrainer(parsingTags)
     
     with open(fileName, "r") as f:  # todo: multi-threading
         soupObj = BeautifulSoup(f, "html.parser") #parse every tag in a html
         for script in soupObj(["head","script", "style"]): 
             script.decompose()
+ 
+        vipList = [i.get_text() for i in soupObj.find_all(['h1', 'h2', 'h3','b'])] 
+        vipList.append(soupObj.title.text.strip())
 
-        titleList = soupObj.title.text  
-        '''
-        h1List = soupObj.h1.text
-        h2List = soupObj.h2.text
-        h3List = soupObj.h3.text
-        bList = soupObj.b.text  
-        titleList += h1List +h2List +h3List + strongList + bList'''
+        #print(vipList)
+        #print("<----------------------------")
+        #content = soupObj.get_text(" ",strip=True)
+        content = soupObj.find_all(text=True)
 
-        print(titleList)
-        print("<----------------------------")
-        content = soupObj.get_text(" ",strip=True)
-   
+        #print(content)
+        #print("<----------------------------")
+
         tokenLine = pattern.findall(content.lower()) # Tokenize
         tokensList = filterPattern(tokenLine, stopWords) # stopWord + stemming
         #print(tokensList)
@@ -254,8 +186,7 @@ def getTokensList_title(fileName): #only parse title, meta data and header from 
     pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
     stopWords = set(stopwords.words('english'))  # Init here for the performance
 
-    # https://beautiful-soup-4.readthedocs.io/en/latest/index.html?highlight=SoupStrainer
-    # https://www.w3schools.com/html/html_intro.asp
+   
     parsingTags = ['title', 'strong','h1', 'h2', 'h3']
     parsingOnly = SoupStrainer(parsingTags)
     with open(fileName, "r") as f: 
@@ -301,10 +232,13 @@ def stemList(listOfTokens):  # Applying stemming rules for each keywords
     for i in range(len(listOfTokens)):
         # applying the stemmer of each item in the list
         listOfTokens[i] = Porter.stem(listOfTokens[i])
-    return None
 
-def Run():
-    reportMilestone1()
+
+
+def writeJSONFile():
+    with open('one.json', 'w') as fp:
+        json.dump(INDEX, fp, separators=(',', ':'), ensure_ascii=False)
+
 
 def writeINDEXToFile(fileName):
     with open(fileName, "w") as f:
@@ -314,10 +248,8 @@ def writeINDEXToFile(fileName):
             f.write(str(INDEX[keyword]))
             f.write('\n')
 ##################################################
-# for testing/debug performance only
-# https://www.clips.uantwerpen.be/tutorials/python-performance-optimization
 
-# Main()
+
 if __name__ == '__main__':
     start = time.time()
     reportMilestone1()
