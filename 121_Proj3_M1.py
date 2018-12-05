@@ -1,228 +1,59 @@
-#!/usr/bin/python3
-#@Vu Tran
-""" Team 55
-    Vu Tran - 48894667
-    Anas ??
-    Hoang ??
-    CS 121 - Project 3  """
+import json, re
+from nltk.stem  import PorterStemmer 
 
-""" Objective: 
-    Build INDEX table from 37,497 files
-    Parsing for keywords
-    """
+def stemList(listOfTokens):  
+    Porter = PorterStemmer()
+    for i in range(len(listOfTokens)):
+        listOfTokens[i] = Porter.stem(listOfTokens[i])
 
-""" Data structure:
-    INDEX is a dict= {keyword:(set of (docID,frequency)), ...}, works as main database
-    docID = foldNum * 1000 + location file number of that folder, ex: 34/156 => docID = 34156
-    """
+#queryList = ['informatics', 'mondego', 'irvine', 'artificial', 'computer']
 
-""" Algorithm:
-    For each docID do
-        IF a "keyword" found not existing in the INDEX
-            adding it to INDEX[keys]
-            adding docID to the set of that "keywords" in INDEX
-        ELSE
-            adding docID to the set of that "keywords" in INDEX
-    Store INDEX database on a file
-      
-    """
+def init():
+    # get user input and split it on white space and stemm it
+    queryList = input("Enter Search word:").strip().split()
+    stemList(queryList)
+    print(queryList)
+    result = []
+    #load the index as dict
+    data = json.load(open("INDEX1.json"))#json.load(open("./output/hoang.json"))
 
-""" TODO Improving Performance:
-        1. Applying only to html content (vincent)
-        2. Filtering stopword   (vincent)
-        3. Applying lemma compression methods for saving INDEX
-        4. Applying 
-    """
-"""" Answer query:
-    """
-
-""" Reference: https://nlp.stanford.edu/IR-book/html/htmledition/contents-1.html
-             : https://arxiv.org/pdf/1208.6109.pdf => wordlength < 20 ?
-    """
-
-import os, sys
-import re
-from collections import Counter
-import nltk
-from nltk.corpus import stopwords   # Get the common english stopwords
-from bs4 import BeautifulSoup       # Get content from html files
-
-
-INDEX           = dict()            # INDEX = {keyword: {set of (docID, frequency)}}
-docLocation     = dict()            # = { "docID" : path}
-NUM_OF_FOLDERS    = 75              #0-74, 0-499
-NUM_OF_FILES_PER_FOLDER = 500        #0-74, 0-499
-MAXWORDLENGTH           = 20
-MINWORDLENGTH           = 2
-
-def buildINDEX(rootFolder):
-    #0-74, 0-499
-    #Build docID - filename mapping
-    for i in range(0, NUM_OF_FOLDERS):
-        for j in range(0, NUM_OF_FILES_PER_FOLDER):
-            filePath = rootFolder + "/" + str(i) + "/" + str(j)  # WEBPAGES_RAW/0/12
-            docID = i * 1000 + j
-            docLocation[str(docID)] = filePath
-    #print (docLocation)
-
-    #Traverse each file docID and processing
-    for docID in docLocation:
-        try:
-            processOneDoc(docID)
-        except:
-            continue
-    return None
-
-def processOneDoc(docID):
-    dictList = buildDict(docLocation[docID])
-    for keyword in dictList:
-        #todo here
-        if keyword not in INDEX:
-            tmpTuple = (docID,dictList[keyword])
-            tmpSet = set()
-            tmpSet.add(tmpTuple)
-            INDEX[keyword] = tmpSet # INDEX = {keyword: {set of (docID, frequency)}}
-        else:
-            tmpTuple = (docID,dictList[keyword])
-            INDEX[keyword].add(tmpTuple)
-    return None
-
-def runQuery(searchKeyword, numOfDocs):
-    if searchKeyword in INDEX:
-        tmpSet = INDEX[searchKeyword]       # = {(docID, freq), ...}
-        sortedList = sorted(tmpSet, key=lambda item: item[1], reverse=True)
-        # print ("Query result of " + str(searchKeyword))
-        # for i in sortedList[0:numOfDocs]:
-        #     print(i)
-        if numOfDocs < len(sortedList):
-            queryResult = sortedList[0:numOfDocs]
-        else:
-            queryResult = sortedList
-    else:
-        queryResult = set()
-    return  queryResult     #Return a list of (docID,freq)
-
-def locateTSV(docID, fileName): #For milestone 1, I doing with tsv file, todo with json library later on
-    docDirNum, docFileNum = divmod(docID, 1000)
-    docTag= str(docDirNum) + "/" +str(docFileNum)
-    #print(docTag)
-    foundURL = "URL Not Found"
-    try:
-        with open(fileName, "r") as f:                  #todo: multi-threading
-            for line in f:
-                pattern = line.split('\t', maxsplit=2)
-                for pat in pattern:
-                    #print(pat)
-                    if pat == docTag and len(pattern) > 1:
-                        foundURL = pattern[1]
-    except:
-        foundURL = "Error-Finding-URL"
-    return foundURL
-
-def writeINDEXToFile(fileName):
-    with open(fileName, "w") as f:
-        for keyword in INDEX:
-            f.write(keyword)
-            f.write('\t')
-            f.write(str(INDEX[keyword]))
-            f.write('\n')
-    return None
-
-def reportMilestone1():
-    #Build & store INDEX database
-    #Need to change / to \ if using WINDOW
-    if sys.platform.startswith('win32'):
-        slash="\\"
-    else:
-        slash="/"
-
-    rootFolderPath      = os.getcwd() + slash + "WEBPAGES_RAW"
-    TSVFile             = rootFolderPath + slash + "bookkeeping.tsv"
-    indexFilePath       = rootFolderPath + slash + "INDEX"
-    buildINDEX(rootFolderPath)
-    writeINDEXToFile(indexFilePath)
-
-    #Query list
-    queryList   = ['informatics', 'mondego', 'irvine', 'artificial', 'computer']
-    queryReturn = list()
-    numOfReturn = 10
     for query in queryList:
-        print("Query result of " + str(query) + " :")
-        result = runQuery(query, numOfReturn)
-        for docIDItem in result:
-            foundURL = locateTSV(int(docIDItem[0]), TSVFile)
-            queryReturn.append((docIDItem[0], foundURL))
-            docDirNum, docFileNum = divmod(int(docIDItem[0]), 1000)
-            docTag = str(docDirNum) + "/" + str(docFileNum)
-            print("\tDocID " + str(docTag) + " : " + str(foundURL))
-        #print(queryReturn)
-    return None
-
-##################### Text Processing #################################################################
-def getTokensList(fileName):
-    """ Convert file name text contents into sorted list of tokens in alphabetically
-        Reading lines in file: O(n)
-        Sorting token list: O(nlgn)
-        Thus, complexity: O(nlgn)    """
-    tokensList = []
-    pattern = re.compile('[a-z0-9]+', re.IGNORECASE)
-    stopWords = set(stopwords.words('english'))     #Init here for the performance
-
-    with open(fileName, "r") as f:                  #todo: multi-threading
-        soupObj = BeautifulSoup(f, features="html.parser")          # improving performance
-        content = soupObj.get_text()
-        tokenLine = pattern.findall(content.lower())
-        #print(tokenLine)
-        tokensList = filterPattern(tokenLine, stopWords)
-        #print(tokensList)
-
-    return sorted(tokensList)       #to ensure later sorted(dictList) return descending by value and ascending by key
-
-def buildDict(fileName):
-    """ Returns a list of pairs (key,value)
-        [("keys" -> "number of appearance of the key")] and sorted by the highest appearance
-        Complexity: O(nlgn)    """
-    tokenList = getTokensList(fileName)
-    dictList = Counter() #faster
-    for token in tokenList:
-        dictList[token] += 1
-    return dictList
-
-def filterPattern(tokenList, stopWords):   # Applying all possible rules to filtering out non-sense keywords
-    filteredList = []
-    for pattern in tokenList:
-        selectPattern = True
-        if  (re.compile('^[0-9].*', re.IGNORECASE)).match(str(pattern))                             \
-            or (re.compile('^[0-9]+', re.IGNORECASE)).match(str(pattern))                           \
-            or (pattern in stopWords)                                                               \
-            or (len(str(pattern)) > MAXWORDLENGTH)                                                  \
-            or (len(str(pattern)) <= MINWORDLENGTH):
-            selectPattern = False
-
-        if  selectPattern:
-            filteredList.append(pattern)
-
-    return filteredList
-######################################################################################################
-
-
-#Main()
-if __name__ == '__main__':
-    reportMilestone1()
+        try:
+            # get the posting list for the query if in index
+            postingList = data[query.lower()]
+        except:
+            #query not in index, who care move on!
+            print("NO Result!")
+            continue
+        # list of Url sets (for every query) 
+        result.append(setOfURLS(postingList))
+    
+    #print(result)
+    if len(result):
+        x = list(result[0].intersection(*result[1:]))
+        for i in range(10):
+            print(i,x[i],"\n")
+        #with open('r.txt','a') as w:
+            #w.write(x)   
+            #w.write("\n") 
 
 
 
+def setOfURLS(postingList):
+    rset = set()
+    #load bookkeeping file as dict
+    bookkeepingJson = json.load(open('./WEBPAGES_RAW/bookkeeping.json'))
+    # i is list of ti-dfi and docId
+    for i in postingList:
+            # match bookkeeping ID
+            #print(i)
+            docDirNum, docFileNum = divmod(int(i[0]), 1000)
+            docID = str(docDirNum) + "/" + str(docFileNum)
 
+            # once we have docID it alawys exists in bookkeeping dict
+            targetURL = bookkeepingJson[docID]
+            rset.add(targetURL)
+            #print("DocID: %s URL: %s"  %(str(docID),targetURL))
+    return rset
 
-
-
-
-
-
-
-
-
-
-
-
-
+init()
